@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#1a1a2e"
+    tools:context=".ui.filebrowser.FileBrowserFragment">
+
+    <!-- Header with current path and back button -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="8dp"
+        android:background="#16213e">
+
+        <!-- Back/Up button - Large for car use -->
+        <ImageButton
+            android:id="@+id/btn_back"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:src="@android:drawable/ic_menu_revert"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/back"
+            android:tint="#e94560"
+            android:scaleType="centerInside"
+            android:padding="12dp" />
+
+        <!-- Current path display -->
+        <TextView
+            android:id="@+id/tv_current_path"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="/"
+            android:textColor="#ffffff"
+            android:textSize="20sp"
+            android:singleLine="true"
+            android:ellipsize="start"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp" />
+
+        <!-- Refresh button -->
+        <ImageButton
+            android:id="@+id/btn_refresh"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:src="@android:drawable/ic_menu_rotate"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/refresh"
+            android:tint="#0f3460"
+            android:scaleType="centerInside"
+            android:padding="12dp" />
+    </LinearLayout>
+
+    <!-- File/Folder list -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler_files"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:padding="8dp" />
+
+    <!-- Empty state message -->
+    <TextView
+        android:id="@+id/tv_empty"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:text="@string/no_media_files"
+        android:textColor="#888888"
+        android:textSize="24sp"
+        android:visibility="gone" />
+
+    <!-- Permission request button -->
+    <Button
+        android:id="@+id/btn_permission"
+        android:layout_width="wrap_content"
+        android:layout_height="80dp"
+        android:layout_gravity="center"
+        android:text="@string/grant_permission"
+        android:textSize="20sp"
+        android:paddingStart="32dp"
+        android:paddingEnd="32dp"
+        android:visibility="gone" />
+
+</LinearLayout>

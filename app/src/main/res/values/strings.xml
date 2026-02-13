@@ -1,0 +1,45 @@
+<resources>
+    <string name="app_name">MP3Player</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="nav_header_title">Media Player</string>
+    <string name="nav_header_subtitle">Audio &amp; Video</string>
+    <string name="nav_header_desc">Navigation header</string>
+    <string name="action_settings">Settings</string>
+
+    <!-- Menu items -->
+    <string name="menu_file_browser">Browse Files</string>
+    <string name="menu_media_player">Player</string>
+    <string name="menu_now_playing">Now Playing</string>
+    <string name="menu_settings">Settings</string>
+
+    <!-- File browser -->
+    <string name="back">Back</string>
+    <string name="refresh">Refresh</string>
+    <string name="folder">Folder</string>
+    <string name="open_folder">Open folder</string>
+    <string name="media_file">Media file</string>
+    <string name="no_media_files">No media files found</string>
+    <string name="grant_permission">Grant Storage Permission</string>
+    <string name="storage_roots">Storage</string>
+    <string name="media_files_count">%d media files</string>
+
+    <!-- Player -->
+    <string name="play_pause">Play/Pause</string>
+    <string name="previous">Previous</string>
+    <string name="next">Next</string>
+    <string name="track_info">Track %1$d of %2$d</string>
+
+    <!-- Now playing -->
+    <string name="now_playing">Now Playing</string>
+    <string name="playlist">Playlist</string>
+    <string name="no_playlist">No files in playlist</string>
+
+    <!-- Permissions -->
+    <string name="permission_required">Storage permission required to browse media files</string>
+    <string name="permission_denied">Permission denied. Please grant storage permission in settings.</string>
+
+    <!-- Legacy strings for template layouts -->
+    <string name="fab_content_description">Represents a view to invoke an action</string>
+    <string name="image_view_item_transform_content_description">Represents an image view in the item</string>
+</resources>
