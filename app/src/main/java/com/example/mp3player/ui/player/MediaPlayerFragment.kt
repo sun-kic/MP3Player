@@ -3,10 +3,13 @@ package com.example.mp3player.ui.player
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.view.GestureDetector
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.SeekBar
+import androidx.core.view.GestureDetectorCompat
 import androidx.fragment.app.Fragment
 import com.example.mp3player.MainActivity
 import com.example.mp3player.R
@@ -15,7 +18,7 @@ import com.example.mp3player.databinding.FragmentMediaPlayerBinding
 import com.example.mp3player.player.MediaPlayerManager
 
 /**
- * Fragment for media playback with controls
+ * Fragment for media playback with YouTube-style gesture controls
  */
 class MediaPlayerFragment : Fragment(), MediaPlayerManager.PlaybackListener {
 
@@ -23,6 +26,7 @@ class MediaPlayerFragment : Fragment(), MediaPlayerManager.PlaybackListener {
     private val binding get() = _binding!!
 
     private lateinit var playerManager: MediaPlayerManager
+    private lateinit var gestureDetector: GestureDetectorCompat
     
     private val handler = Handler(Looper.getMainLooper())
     private val updateProgressRunnable = object : Runnable {
@@ -32,7 +36,6 @@ class MediaPlayerFragment : Fragment(), MediaPlayerManager.PlaybackListener {
         }
     }
     
-    // Auto-hide controls after 3 seconds
     private val hideControlsRunnable = Runnable {
         if (playerManager.isCurrentVideo() && playerManager.isPlaying()) {
             hideControls()
@@ -41,6 +44,11 @@ class MediaPlayerFragment : Fragment(), MediaPlayerManager.PlaybackListener {
     
     private var controlsVisible = true
     private val HIDE_DELAY_MS = 3000L
+    
+    // Track double tap to prevent single tap from toggling controls
+    private var isDoubleTapPending = false
+    private var lastTapTime = 0L
+    private val DOUBLE_TAP_TIMEOUT = 300L
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -59,17 +67,15 @@ class MediaPlayerFragment : Fragment(), MediaPlayerManager.PlaybackListener {
         setupPlayerView()
         setupControls()
         setupSeekBar()
-        setupTapToShowControls()
+        setupGestures()
         
         playerManager.addListener(this)
         
-        // Update UI with current state
         updateNowPlaying()
         updatePlayPauseButton()
     }
 
     private fun setupPlayerView() {
-        // Attach ExoPlayer to PlayerView
         binding.playerView.player = playerManager.getPlayer()
     }
 
@@ -78,20 +84,23 @@ class MediaPlayerFragment : Fragment(), MediaPlayerManager.PlaybackListener {
             playerManager.togglePlayPause()
             resetHideTimer()
         }
-        
+
         binding.btnPrevious.setOnClickListener {
             playerManager.playPrevious()
             resetHideTimer()
         }
-        
+
         binding.btnNext.setOnClickListener {
             playerManager.playNext()
             resetHideTimer()
         }
-        
-        // Also reset timer when touching the controls container
-        binding.controlsContainer.setOnClickListener {
-            resetHideTimer()
+
+        binding.btnExitFullscreen.setOnClickListener {
+            val mainActivity = activity as? MainActivity
+            mainActivity?.let {
+                hideControlsWithoutFullscreen()
+                it.exitFullscreen()
+            }
         }
     }
 
@@ -104,38 +113,77 @@ class MediaPlayerFragment : Fragment(), MediaPlayerManager.PlaybackListener {
             }
 
             override fun onStartTrackingTouch(seekBar: SeekBar?) {
-                // Stop auto-hide while seeking
                 handler.removeCallbacks(hideControlsRunnable)
             }
             
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
-                // Restart auto-hide timer after seeking
                 resetHideTimer()
             }
         })
     }
     
-    private fun setupTapToShowControls() {
-        // Tap on video player view to toggle controls
-        binding.playerView.setOnClickListener {
-            if (playerManager.isCurrentVideo()) {
+    private fun setupGestures() {
+        gestureDetector = GestureDetectorCompat(requireContext(), object : GestureDetector.SimpleOnGestureListener() {
+            override fun onDown(e: MotionEvent): Boolean {
+                val currentTime = System.currentTimeMillis()
+                val timeSinceLastTap = currentTime - lastTapTime
+                isDoubleTapPending = timeSinceLastTap < DOUBLE_TAP_TIMEOUT
+                return true
+            }
+            
+            override fun onSingleTapUp(e: MotionEvent): Boolean {
+                // Only toggle controls if not part of a double tap sequence
+                if (!isDoubleTapPending && playerManager.isCurrentVideo()) {
+                    if (controlsVisible) {
+                        hideControls()
+                    } else {
+                        showControls()
+                    }
+                }
+                return true
+            }
+            
+            override fun onDoubleTap(e: MotionEvent): Boolean {
+                if (!playerManager.isCurrentVideo()) {
+                    return false
+                }
+                
+                lastTapTime = System.currentTimeMillis()
+                
+                // YouTube logic:
+                // - Controls visible: hide them without seeking
+                // - Controls hidden: perform seek
                 if (controlsVisible) {
                     hideControls()
                 } else {
-                    showControls()
-                    // No auto-hide after manual tap - user taps again to hide
-                    // This gives unlimited time to use navigation (Browse Files, etc.)
+                    val screenWidth = binding.playerView.width
+                    val x = e.x
+                    
+                    if (x < screenWidth / 2) {
+                        val currentPosition = playerManager.getCurrentPosition()
+                        val newPosition = (currentPosition - 10000).coerceAtLeast(0)
+                        playerManager.seekTo(newPosition)
+                        showToast("后退 10 秒")
+                    } else {
+                        val currentPosition = playerManager.getCurrentPosition()
+                        val duration = playerManager.getDuration()
+                        val newPosition = (currentPosition + 10000).coerceAtMost(duration)
+                        playerManager.seekTo(newPosition)
+                        showToast("快进 10 秒")
+                    }
                 }
+                return true
             }
-        }
+        })
         
-        // Also handle tap on root view for video mode
-        binding.root.setOnClickListener {
-            if (playerManager.isCurrentVideo() && !controlsVisible) {
-                showControls()
-                // No auto-hide - user taps again to hide
-            }
+        binding.playerView.setOnTouchListener { _, event ->
+            gestureDetector.onTouchEvent(event)
+            true
         }
+    }
+    
+    private fun showToast(message: String) {
+        android.widget.Toast.makeText(requireContext(), message, android.widget.Toast.LENGTH_SHORT).show()
     }
     
     private fun showControls() {
@@ -146,11 +194,20 @@ class MediaPlayerFragment : Fragment(), MediaPlayerManager.PlaybackListener {
             .start()
         controlsVisible = true
         
-        // Exit fullscreen to show ActionBar and bottom nav when showing controls
-        (activity as? MainActivity)?.exitFullscreen()
+        if (playerManager.isCurrentVideo()) {
+            binding.btnExitFullscreen.visibility = View.VISIBLE
+        }
     }
     
     private fun hideControls() {
+        hideControlsWithoutFullscreen()
+        
+        if (playerManager.isCurrentVideo()) {
+            (activity as? MainActivity)?.enterFullscreen()
+        }
+    }
+    
+    private fun hideControlsWithoutFullscreen() {
         binding.controlsContainer.animate()
             .alpha(0f)
             .setDuration(200)
@@ -162,10 +219,7 @@ class MediaPlayerFragment : Fragment(), MediaPlayerManager.PlaybackListener {
             .start()
         controlsVisible = false
         
-        // Enter fullscreen for video to hide all UI elements
-        if (playerManager.isCurrentVideo()) {
-            (activity as? MainActivity)?.enterFullscreen()
-        }
+        binding.btnExitFullscreen.visibility = View.GONE
     }
     
     private fun resetHideTimer() {
@@ -179,30 +233,27 @@ class MediaPlayerFragment : Fragment(), MediaPlayerManager.PlaybackListener {
         val currentFile = playerManager.getCurrentFile()
         val isVideo = currentFile?.isVideo ?: false
         
-        // For video, immediately enter fullscreen BEFORE updating UI to prevent white bar
         if (isVideo) {
-            // Immediately enter fullscreen for video to remove status bar and navigation
             (activity as? MainActivity)?.enterFullscreen()
-            // Hide controls immediately for video
             hideControls()
             if (playerManager.isPlaying()) {
                 resetHideTimer()
             }
-        } else if (!isVideo) {
-            // Always show controls for audio
+        } else {
             showControls()
             handler.removeCallbacks(hideControlsRunnable)
         }
         
-        // Show/hide video player vs audio visualization
         binding.playerView.visibility = if (isVideo) View.VISIBLE else View.GONE
         binding.audioContainer.visibility = if (isVideo) View.GONE else View.VISIBLE
         
-        // Update file name
+        if (!isVideo) {
+            binding.btnExitFullscreen.visibility = View.GONE
+        }
+        
         binding.tvNowPlaying.text = currentFile?.displayName ?: ""
         binding.tvAudioTitle.text = currentFile?.name ?: ""
         
-        // Update track info
         val playlist = playerManager.getPlaylist()
         val index = playerManager.getCurrentIndex()
         if (playlist.isNotEmpty() && index >= 0) {
@@ -250,7 +301,6 @@ class MediaPlayerFragment : Fragment(), MediaPlayerManager.PlaybackListener {
         super.onResume()
         handler.post(updateProgressRunnable)
         
-        // For video, immediately enter fullscreen and start auto-hide if playing
         if (playerManager.isCurrentVideo()) {
             (activity as? MainActivity)?.enterFullscreen()
             if (playerManager.isPlaying()) {
@@ -263,7 +313,6 @@ class MediaPlayerFragment : Fragment(), MediaPlayerManager.PlaybackListener {
         super.onPause()
         handler.removeCallbacks(updateProgressRunnable)
         handler.removeCallbacks(hideControlsRunnable)
-        // Save playback state when leaving the player
         playerManager.saveCurrentPlaybackState()
     }
 
@@ -272,14 +321,10 @@ class MediaPlayerFragment : Fragment(), MediaPlayerManager.PlaybackListener {
         handler.removeCallbacks(hideControlsRunnable)
         playerManager.removeListener(this)
         binding.playerView.player = null
-        
-        // Exit fullscreen when leaving player
         (activity as? MainActivity)?.exitFullscreen()
-        
         _binding = null
     }
 
-    // PlaybackListener implementation
     override fun onTrackChanged(file: MediaFile?, index: Int) {
         updateNowPlaying()
     }
@@ -291,12 +336,10 @@ class MediaPlayerFragment : Fragment(), MediaPlayerManager.PlaybackListener {
     override fun onPlaybackStateChanged(isPlaying: Boolean) {
         updatePlayPauseButton()
         
-        // Handle auto-hide based on play state
         if (playerManager.isCurrentVideo()) {
             if (isPlaying) {
                 resetHideTimer()
             } else {
-                // Show controls when paused
                 handler.removeCallbacks(hideControlsRunnable)
                 showControls()
             }

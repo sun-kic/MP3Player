@@ -23,6 +23,7 @@
         app:resize_mode="fit"
         app:show_buffering="when_playing" />
 
+
     <!-- Audio visualization / Album art placeholder -->
     <LinearLayout
         android:id="@+id/audio_container"
@@ -178,5 +179,22 @@
             android:paddingTop="8dp" />
 
     </LinearLayout>
+
+    <!-- Exit fullscreen button - top left, must be last to be on top of all other views -->
+    <ImageButton
+        android:id="@+id/btn_exit_fullscreen"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_gravity="start|top"
+        android:layout_margin="16dp"
+        android:src="@android:drawable/ic_menu_close_clear_cancel"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        app:tint="#ffffff"
+        android:scaleType="centerInside"
+        android:padding="12dp"
+        android:visibility="gone"
+        android:clickable="true"
+        android:focusable="true"
+        android:contentDescription="@string/exit_fullscreen" />
 
 </FrameLayout>
