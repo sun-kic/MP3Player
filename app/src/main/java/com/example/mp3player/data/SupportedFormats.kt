@@ -8,7 +8,7 @@ object SupportedFormats {
     val VIDEO_EXTENSIONS = setOf("mp4", "mkv", "mpg", "mpeg", "avi")
     
     // Audio formats
-    val AUDIO_EXTENSIONS = setOf("mp3", "wav", "flac")
+    val AUDIO_EXTENSIONS = setOf("mp3", "wav", "flac", "m4a")
     
     // All supported formats
     val ALL_EXTENSIONS = VIDEO_EXTENSIONS + AUDIO_EXTENSIONS

@@ -14,3 +14,9 @@
 .externalNativeBuild
 .cxx
 local.properties
+build_log.txt
+build_output.txt
+build_output2.txt
+errors.txt
+kotlin_errors.txt
+app/release/
